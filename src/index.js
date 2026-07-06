@@ -5,7 +5,16 @@ dotenv.config({
     path: '/env'
 }, {
     debug: true
-},
-    { quiet: true })
+})
 const app = express()
-ConnectDb();
+const PORT=process.env.PORT || 8000;
+
+
+ConnectDb()
+.then(app.listen(PORT,()=>{
+    console.log(`Server running at port ${PORT}`);
+}))
+.catch((err)=>{
+    console.log(err);
+}
+)
