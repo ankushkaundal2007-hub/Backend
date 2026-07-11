@@ -9,21 +9,20 @@
 //if promise rejects and error is catched then error is passed to next (a middleware to handle error)
 
 
-const asyncHandler=(fun)=>async(req,res,next)=>{
-    try {
-        await fun(req,next,res)
-    } catch (error) {
-        res.status(error.code|| 500).json({
-            success:false,
-            message:error.message
-        })
-        
-    }
-    
-    
-}
-export {asyncHandler}
+const asyncHandler = (fun) => {
+    return async (req, res, next) => {
+        try {
+            await fun(req, res, next);
+        } catch (error) {
+            res.status(error.code || 500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    };
+};
 
+export default asyncHandler;
 // "asyncHandler doesn't execute my controller immediately—it wraps it in a protected function. Express later executes that wrapper on every request, and the wrapper executes my controller inside try...catch
 
 // "Higher-Order Function (HOF): Takes a function, returns a function. The returned function remembers the original function (closure) and adds extra behavior without changing the original."
