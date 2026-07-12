@@ -1,9 +1,70 @@
 import asyncHandler from "../utils/asyncHandler.js"
+import {ApiError} from "../utils/ApiErrors.js"
+import User from "../models/user.model.js";
+import uploadOnCloudinary from "../utils/cloudinary.js";
+import {ApiResponse} from "../utils/ApiResponse.js"
 
-const registerUser=asyncHandler((req,res)=>{
-    res.status(200).json({
-        message:"success"
-    })
+const registerUser=asyncHandler(async(req,res)=>{
+   // get the data from frontend
+   // validate the data
+   // check data is received or not.
+   // check if user exists or not
+   //check for avatar and coverImage:multer success
+   // upload avatar or other files to cloudinary
+   // make a database entry for given data
+   // check success of entry
+   // send in response the same data excluding password and refresh token
+   const {username,email,FullName,password}=req.body;
+    if([username,email,FullName,password].some((field)=>{
+      field?.trim()==""
+    })){
+      throw new ApiError(404,"All fields are required")
+    }
+  const existingUser= await User.findOne({
+   $or:[{email},{username}]
+  })
+
+  if(existingUser){
+   throw new ApiError(404,"User already exists")
+  }
+
+  const avatarLocalPath= req.files?.avatar[0].path
+  const coverImageLocalPath= req.files?.coverImage[0].path
+
+  if(!avatarLocalPath){
+   throw new ApiError(404,"Avatar is required")
+  }
+
+  const uploadAvatar=await uploadOnCloudinary(avatarLocalPath)
+  const uploadCoverImage=await uploadOnCloudinary(coverImageLocalPath)
+
+  if(!uploadAvatar){
+   throw new ApiError(500,"Some error occurred while uploading files")
+  }
+const user = await User.create({
+    username:username.toLowerCase(),
+    email,
+    FullName,
+    avatar: uploadAvatar.url,
+    coverImage:uploadCoverImage.url ||"",
+    password,
+});
+
+ const createdUser=await User.findById(user._id).select(
+   "-password -RefreshToken"
+ )
+
+ if(!createdUser){
+   throw new ApiError(500,"something went wrong while registering User")
+ }
+
+ res.status(200).json(
+  new ApiResponse(200,createdUser,"user registered successfully")
+ )
+
+
+
+    
 })
 
-export default registerUser;
+export default registerUser

@@ -11,8 +11,8 @@ const UserSchema=new mongoose.Schema({
     },
     watchHistory:[
         {
-            type:mongoose.Schema.types.ObjectId,
-            ref:Video
+            type:mongoose.Schema.Types.ObjectId,
+            ref:"Video"
         }
     ],
     email:{
@@ -31,7 +31,6 @@ const UserSchema=new mongoose.Schema({
     },
     coverImage:{
         type:String,
-        required:true
     },
     password:{
         type:String,
