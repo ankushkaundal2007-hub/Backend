@@ -1,6 +1,7 @@
 import { Router } from "express";
-import registerUser from "../controller/user.controller.js";
+import {registerUser,loginUser} from "../controller/user.controller.js";
 import {upload} from "../middlewares/multer.middleware.js"
+import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const userRouter=Router();
 
@@ -11,4 +12,5 @@ userRouter.route("/register").post(
     ]),
     registerUser);
 //http://localhost:3000/api/users/register
+userRouter.route("/login").post(verifyJWT,loginUser);
 export default userRouter;
