@@ -72,7 +72,7 @@ const user = await User.create({
 })
 const generateAccessAndRefreshTokens=async (userId) => {
     try {
-      const user= await User.findOne(userId)
+      const user= await User.findById(userId)
       const AccessToken= user.generateAccessToken()
       const RefreshToken=user.generateRefreshToken()
       user.RefreshToken=RefreshToken
@@ -81,7 +81,7 @@ const generateAccessAndRefreshTokens=async (userId) => {
         return {AccessToken,RefreshToken}
       
     } catch (error) {
-      throw new ApiError(500,"something went wrong while generating refresh token")
+      throw new ApiError(500,"something went wrong while generating tokens")
     }
   
 }
@@ -93,7 +93,7 @@ const loginUser=asyncHandler(async(req,res)=>{
     // generate access and refresh token ans store refresh in db
     // send access token via cookies to user
     const{username,email,password}=req.body
-    if (!username || !email) {
+    if (!(username || email)) {
       throw new ApiError(404,"username or email is required");
       
     }
@@ -115,7 +115,7 @@ const loginUser=asyncHandler(async(req,res)=>{
       // the user used here is before calling this above function so this user doesn't have refresh token,
       // so we have two ways one we can add refresh token to it and save means update it or make a query again and fetch latest one
 
-      const loggedInUser= User.findById(user._id).
+      const loggedInUser= await User.findById(user._id).
       select("-password -RefreshToken")
 
   const options={
@@ -149,8 +149,8 @@ const logoutUser=asyncHandler(async(req,res)=>{
     httpOnly:true,
     secure:true
   }
-  return res.
-  status(200)
+  return res
+  .status(200)
   .clearCookie("AccessToken",options)
   .clearCookie("RefreshToken",options)
   .json(new ApiResponse(200,"User logged out"))
