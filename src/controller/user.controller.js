@@ -223,12 +223,99 @@ const changeCurrentPassword=asyncHandler(async(req,res)=>{
     ))
 
 })
+
+const getCurrentUser=asyncHandler(async(req,res)=>{
+  const user=req.user
+  return res
+  .status(200)
+  .json(new ApiResponse(
+    200,
+    {user:user},
+    "user data sent successfully"
+  ))
+})
+
+const updateFileAvatar=asyncHandler(async(req,res)=>{
+  //first verify jwt whether user is logged in then only go ahead,use middleware
+  //multer upload
+  // check file received or not 
+  //upload on cloudinary
+  //save in db
+  const avatarLocalPath=req.file?.path;
+  if(!avatarLocalPath){
+    throw new ApiError(404,"file not uploaded");
+  }
+
+  const uploadedNewAvatar= await uploadOnCloudinary(avatarLocalPath);
+  if(!uploadedNewAvatar){
+    throw new ApiError(500,"file upload on cloudinary failed");
+  }
+  const user=await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set:{
+        avatar:uploadedNewAvatar.url
+      }
+    },
+    {
+      new:true
+    }
+  ).select("-password")
+
+  res
+  .status(200)
+  .json(new ApiResponse(
+    200,
+    {},
+    "avatar updated successfully"
+  ))
+
+})
+const updateFileCoverImage=asyncHandler(async(req,res)=>{
+  //first verify jwt whether user is logged in then only go ahead,use middleware
+  //multer upload
+  // check file received or not 
+  //upload on cloudinary
+  //save in db
+  const coverImageLocalPath=req.file?.path;
+  if(!coverImageLocalPath){
+    throw new ApiError(404,"file not uploaded");
+  }
+
+  const uploadedNewCoverImage= await uploadOnCloudinary(coverImageLocalPath);
+  if(!uploadedNewCoverImage){
+    throw new ApiError(500,"file upload on cloudinary failed");
+  }
+  const user=await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set:{
+        avatar:uploadedNewCoverImage.url
+      }
+    },
+    {
+      new:true
+    }
+  ).select("-password")
+
+  res
+  .status(200)
+  .json(new ApiResponse(
+    200,
+    {},
+    "CoverImage updated successfully"
+  ))
+
+})
 export  {
   registerUser,
   loginUser,
   logoutUser,
   refreshAccessToken,
-  changeCurrentPassword
+  changeCurrentPassword,
+  getCurrentUser,
+  updateFileAvatar,
+  updateFileCoverImage
 
 
 }
