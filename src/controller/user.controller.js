@@ -195,10 +195,40 @@ const refreshAccessToken=asyncHandler(async(req,res)=>{
 
 })
 
+const changeCurrentPassword=asyncHandler(async(req,res)=>{
+     //get old and new password from user
+     // check the data is received or not
+     // now use jwt cookie to find the user in db
+     // then save new password
+     const{oldPassword,newPassword}=req.body
+     if([oldPassword,newPassword].some((field)=>{
+      field.trim()==""
+     })){
+      throw new ApiError(404,"Password is required")
+     }
+
+     const user = await User.findById(req.user?._id);
+     if(!user){
+      throw new ApiError(500,"failed to find user");
+     }
+     
+    user.password=newPassword;
+    await user.save({validateBeforeSave:false});
+    return res
+    .status(200)
+    .json( new ApiResponse(
+      200,
+      {},
+      "password changed successfully"
+    ))
+
+})
 export  {
   registerUser,
   loginUser,
   logoutUser,
-  refreshAccessToken
+  refreshAccessToken,
+  changeCurrentPassword
+
 
 }
