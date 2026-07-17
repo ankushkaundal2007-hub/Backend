@@ -71,6 +71,7 @@ const user = await User.create({
 
     
 })
+
 const generateAccessAndRefreshTokens=async (userId) => {
     try {
       const user= await User.findById(userId)
@@ -86,6 +87,8 @@ const generateAccessAndRefreshTokens=async (userId) => {
     }
   
 }
+
+
 const loginUser=asyncHandler(async(req,res)=>{
     // email,username,password from frontend
     //check the frontend data
@@ -136,6 +139,8 @@ const loginUser=asyncHandler(async(req,res)=>{
   )
 
 })
+
+
 const logoutUser=asyncHandler(async(req,res)=>{
   const user=req.user
   await User.findOneAndUpdate(user._id,
@@ -224,6 +229,7 @@ const changeCurrentPassword=asyncHandler(async(req,res)=>{
 
 })
 
+
 const getCurrentUser=asyncHandler(async(req,res)=>{
   const user=req.user
   return res
@@ -234,6 +240,8 @@ const getCurrentUser=asyncHandler(async(req,res)=>{
     "user data sent successfully"
   ))
 })
+
+
 
 const updateFileAvatar=asyncHandler(async(req,res)=>{
   //first verify jwt whether user is logged in then only go ahead,use middleware
@@ -271,6 +279,8 @@ const updateFileAvatar=asyncHandler(async(req,res)=>{
   ))
 
 })
+
+
 const updateFileCoverImage=asyncHandler(async(req,res)=>{
   //first verify jwt whether user is logged in then only go ahead,use middleware
   //multer upload
@@ -307,6 +317,74 @@ const updateFileCoverImage=asyncHandler(async(req,res)=>{
   ))
 
 })
+
+const getChannelSubscribers=asyncHandler(async (req,res) => {
+    //user searches channel username we send it in url through frontend
+    const username=req.params;
+    if(!username){
+      throw new ApiError(400,"username is missing");
+    }
+
+   const channel= await User.aggregate({
+      $match:{
+        username:username
+      }
+    },
+  {
+    $lookup:{
+      from:"subscribers" ,// actually model name is Subscriber but in db it si saved as subscribers
+       localField:"_id",
+       foreignField:"channel" ,
+       result:"SubscribersCount"        // this pipeline is for counting no of subscribers as for subscriber count docs with channel name
+    }
+    
+  },
+{
+  $lookup:{
+    from:"subscribers",
+    localField:"_id",
+    foreignField:"subscriber",
+    result:"subscribedTo"
+  }
+},
+{
+  $addFields:{
+      subscriberCount:{
+        $size:"$subscribers"
+      },
+      SubscribedToCount:{
+        $size:"$subscribedTo"
+      },
+      isSubscribedToGivenUsernameChannel:{
+        if:{$in:[req.user?._id,"$subscribers.subscriber"]},
+        then:true,
+        else:false
+      }
+  }
+},
+{
+  $project:{                     // it is used to decide what to send and show like what u want to send and show flag it as 1;
+     username:1,
+     subscriberCount:1,
+     SubscribedToCount:1,
+     isSubscribedToGivenUsernameChannel:1,
+     avatar:1,
+     coverImage:1,
+     FullName:1
+  }
+})
+
+// console.log(channel)
+if(!channel?.length()){
+  throw new ApiError(400,"channel not found")
+}
+
+return res
+.status(200)
+.json(new ApiResponse(200,channel[0],"channel fetched successfully"))
+})
+
+
 export  {
   registerUser,
   loginUser,
@@ -315,7 +393,8 @@ export  {
   changeCurrentPassword,
   getCurrentUser,
   updateFileAvatar,
-  updateFileCoverImage
+  updateFileCoverImage,
+  getChannelSubscribers
 
 
 }
