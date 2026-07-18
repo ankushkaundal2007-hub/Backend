@@ -325,7 +325,7 @@ const getChannelSubscribers=asyncHandler(async (req,res) => {
       throw new ApiError(400,"username is missing");
     }
 
-   const channel= await User.aggregate({
+   const channel= await User.aggregate([{
       $match:{
         username:username
       }
@@ -335,7 +335,7 @@ const getChannelSubscribers=asyncHandler(async (req,res) => {
       from:"subscribers" ,// actually model name is Subscriber but in db it si saved as subscribers
        localField:"_id",
        foreignField:"channel" ,
-       result:"SubscribersCount"        // this pipeline is for counting no of subscribers as for subscriber count docs with channel name
+       as:"SubscribersCount"        // this pipeline is for counting no of subscribers as for subscriber count docs with channel name
     }
     
   },
@@ -344,7 +344,7 @@ const getChannelSubscribers=asyncHandler(async (req,res) => {
     from:"subscribers",
     localField:"_id",
     foreignField:"subscriber",
-    result:"subscribedTo"
+    as:"subscribedTo"
   }
 },
 {
@@ -372,7 +372,7 @@ const getChannelSubscribers=asyncHandler(async (req,res) => {
      coverImage:1,
      FullName:1
   }
-})
+}])
 
 // console.log(channel)
 if(!channel?.length()){
@@ -384,7 +384,55 @@ return res
 .json(new ApiResponse(200,channel[0],"channel fetched successfully"))
 })
 
+const getWatchHistory=asyncHandler(async (req,res) => {
+  const user= await USer.aggregate([
+    {$match:{
+      _id:new mongoose.Types.ObjectId(req.user._id)     // actually we cant directly put id here as the pipeline take mongodb id but req.user._id return a string part of id so convert into object id before use,
+                                                         // however req.user._id directly converts into object id via mongoose when used during findOne,findById function,it only follows string during pipelines
+    }},
+    {
+      $lookup:{
+        from:"videos",
+        localField:"watchHistory",
+        foreignField:"_id",
+        as:"watchHistory",
+        pipeline:[
+          {$lookup:{
+            from:"users",
+            localField:"owner",
+            foreignField:"_id",
+            as:"owner",
+            pipeline:[{
+              $project:{
+                username:1,
+                FullName:1,
+                avatar:1
+              }
+            },
+          {
+            $addFields:{
+              owner:{
+                $first:"$owner"
+              }
+            }
+          }]
+          }},
+        ]
+        
+          
+        
+      }
+    },
 
+  ])
+
+  return res
+  .status(200)
+  .json(new ApiResponse(200,
+    user[0].watchHistory,
+    "watchHistory fetched successfully"
+  ))
+})
 export  {
   registerUser,
   loginUser,
@@ -394,7 +442,8 @@ export  {
   getCurrentUser,
   updateFileAvatar,
   updateFileCoverImage,
-  getChannelSubscribers
+  getChannelSubscribers,
+  getWatchHistory
 
 
 }
